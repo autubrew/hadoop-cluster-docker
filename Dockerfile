@@ -1,26 +1,30 @@
-FROM ubuntu:14.04
+FROM ubuntu:18.04
 
-MAINTAINER KiwenLau <kiwenlau@gmail.com>
+MAINTAINER autubrew <violettime@foxmail.com>
 
 WORKDIR /root
 
-# install openssh-server, openjdk and wget
-RUN apt-get update && apt-get install -y openssh-server openjdk-7-jdk wget
+# install ssh, pdsh, openjdk and wget
+RUN apt-get update && apt-get install -y ssh pdsh openjdk-8-jdk wget
 
-# install hadoop 2.7.2
-RUN wget https://github.com/kiwenlau/compile-hadoop/releases/download/2.7.2/hadoop-2.7.2.tar.gz && \
-    tar -xzvf hadoop-2.7.2.tar.gz && \
-    mv hadoop-2.7.2 /usr/local/hadoop && \
-    rm hadoop-2.7.2.tar.gz
+# install openssh-server, openjdk and wget
+# RUN apt-get update && apt-get install -y openssh-server openjdk-7-jdk wget
+
+# install hadoop 3.2.1
+RUN wget http://mirror.bit.edu.cn/apache/hadoop/common/stable/hadoop-3.2.1.tar.gz && \
+    tar -xzvf hadoop-3.2.1.tar.gz && \
+    mv hadoop-3.2.1 /usr/local/hadoop && \
+    rm hadoop-3.2.1.tar.gz
 
 # set environment variable
-ENV JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64 
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 
 ENV HADOOP_HOME=/usr/local/hadoop 
 ENV PATH=$PATH:/usr/local/hadoop/bin:/usr/local/hadoop/sbin 
 
-# ssh without key
-RUN ssh-keygen -t rsa -f ~/.ssh/id_rsa -P '' && \
-    cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+# ssh to the localhost without a passphrase
+RUN ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa && \
+    cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys && \
+    chmod 0600 ~/.ssh/authorized_keys
 
 RUN mkdir -p ~/hdfs/namenode && \ 
     mkdir -p ~/hdfs/datanode && \
@@ -36,12 +40,12 @@ RUN mv /tmp/ssh_config ~/.ssh/config && \
     mv /tmp/yarn-site.xml $HADOOP_HOME/etc/hadoop/yarn-site.xml && \
     mv /tmp/slaves $HADOOP_HOME/etc/hadoop/slaves && \
     mv /tmp/start-hadoop.sh ~/start-hadoop.sh && \
-    mv /tmp/run-wordcount.sh ~/run-wordcount.sh
-
-RUN chmod +x ~/start-hadoop.sh && \
+    mv /tmp/run-wordcount.sh ~/run-wordcount.sh && \
+    chmod +x ~/start-hadoop.sh && \
     chmod +x ~/run-wordcount.sh && \
     chmod +x $HADOOP_HOME/sbin/start-dfs.sh && \
-    chmod +x $HADOOP_HOME/sbin/start-yarn.sh 
+    chmod +x $HADOOP_HOME/sbin/start-yarn.sh && \
+    rm -rf /tmp/config/*
 
 # format namenode
 RUN /usr/local/hadoop/bin/hdfs namenode -format
